@@ -13,6 +13,7 @@ import { TasksPage } from './modules/lf-engenharia/tasks/TasksPage';
 import { TeamPage } from './modules/lf-engenharia/team/TeamPage';
 import { ProfilePage } from './modules/lf-engenharia/profile/ProfilePage';
 import { LoginPage } from './modules/lf-engenharia/auth/LoginPage';
+import { UpdatePasswordPage } from './modules/lf-engenharia/auth/UpdatePasswordPage';
 import { MasterDashboardPage } from './modules/lf-engenharia/master/MasterDashboardPage';
 import { AnimatePresence } from 'motion/react';
 import { syncManager } from './core/sync/OfflineSync';
@@ -32,6 +33,7 @@ const AppRoutes = ({ location }: { location: any }) => {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -40,6 +42,7 @@ const AppRoutes = ({ location }: { location: any }) => {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location}>
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
         <Route path="/" element={<MainLayout />}>
           <Route index element={<AcompanhamentoObra />} />
           <Route path="timeline" element={<AcompanhamentoObra />} />
