@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { path: '/master', label: 'Visão Geral', icon: Activity, roles: ['ADMIN'] },
   { path: '/obras', label: 'Obras', icon: Home, roles: ['ADMIN', 'COLABORADOR', 'CLIENTE'] },
   { path: '/dashboard', label: 'Financeiro', icon: LayoutDashboard, roles: ['ADMIN'] },
-  { path: '/users', label: 'Equipe', icon: Users, roles: ['ADMIN'] },
+  { path: '/users', label: 'RH & Equipe', icon: Users, roles: ['ADMIN'] },
   { path: '/tasks', label: 'Tarefas', icon: CheckSquare, roles: ['ADMIN', 'COLABORADOR'] },
   { path: '/profile', label: 'Perfil', icon: UserIcon, roles: ['ADMIN', 'COLABORADOR', 'CLIENTE'] },
 ];
