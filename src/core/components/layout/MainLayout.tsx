@@ -13,7 +13,7 @@ export function cn(...inputs: ClassValue[]) {
 
 const NAV_ITEMS = [
   { path: '/master', label: 'Visão Geral', icon: Activity, roles: ['ADMIN'] },
-  { path: '/timeline', label: 'Obras/RDO', icon: Home, roles: ['ADMIN', 'COLABORADOR', 'CLIENTE'] },
+  { path: '/obras', label: 'Obras', icon: Home, roles: ['ADMIN', 'COLABORADOR', 'CLIENTE'] },
   { path: '/dashboard', label: 'Financeiro', icon: LayoutDashboard, roles: ['ADMIN'] },
   { path: '/users', label: 'Equipe', icon: Users, roles: ['ADMIN'] },
   { path: '/tasks', label: 'Tarefas', icon: CheckSquare, roles: ['ADMIN', 'COLABORADOR'] },
@@ -47,7 +47,7 @@ export const MainLayout = () => {
 
         <nav className="flex-1 space-y-2">
           {allowedNavItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path === '/timeline' && location.pathname === '/');
+            const isActive = location.pathname.startsWith(item.path) || (item.path === '/obras' && location.pathname === '/');
             const Icon = item.icon;
             return (
               <NavLink
@@ -113,7 +113,7 @@ export const MainLayout = () => {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#171717]/85 backdrop-blur-3xl border-t border-white/10 pb-[env(safe-area-inset-bottom)] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="flex justify-around items-center px-2 py-3">
           {allowedNavItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path === '/timeline' && location.pathname === '/');
+            const isActive = location.pathname.startsWith(item.path) || (item.path === '/obras' && location.pathname === '/');
             const Icon = item.icon;
             return (
               <NavLink

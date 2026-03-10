@@ -7,6 +7,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './core/auth/AuthContext';
 import { MainLayout } from './core/components/layout/MainLayout';
+import { ObrasPipelinePage } from './modules/lf-engenharia/obras/ObrasPipelinePage';
 import AcompanhamentoObra from './modules/lf-engenharia/acompanhamento/AcompanhamentoObra';
 import FinanceiroDashboard from './modules/lf-engenharia/financeiro/FinanceiroDashboard';
 import { TasksPage } from './modules/lf-engenharia/tasks/TasksPage';
@@ -44,8 +45,9 @@ const AppRoutes = ({ location }: { location: any }) => {
       <Routes location={location}>
         <Route path="/update-password" element={<UpdatePasswordPage />} />
         <Route path="/" element={<MainLayout />}>
-          <Route index element={<AcompanhamentoObra />} />
-          <Route path="timeline" element={<AcompanhamentoObra />} />
+          <Route index element={<Navigate to="/obras" replace />} />
+          <Route path="obras" element={<ObrasPipelinePage />} />
+          <Route path="obras/:id" element={<AcompanhamentoObra />} />
           <Route path="master" element={<MasterDashboardPage />} />
           <Route path="dashboard" element={<FinanceiroDashboard />} />
           <Route path="users" element={<TeamPage />} />

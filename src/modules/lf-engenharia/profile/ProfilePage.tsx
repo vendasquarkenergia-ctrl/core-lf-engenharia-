@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { User, Mail, Lock, Camera, Save, LogOut, CheckCircle2 } from 'lucide-react';
+import { LogOut, Camera, Save, CheckCircle2, User, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../../core/auth/AuthContext';
+import { supabase } from '../../../lib/supabase';
 import { cn } from '../../../core/components/layout/MainLayout';
 
 export const ProfilePage = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshSession } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -16,11 +18,67 @@ export const ProfilePage = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaved(true);
-    setIsEditing(false);
-    setTimeout(() => setIsSaved(false), 3000);
+    if (!user) return;
+
+    try {
+      if (name !== user.name) {
+        await supabase.from('users_profiles').update({ full_name: name }).eq('id', user.id);
+      }
+
+      if (newPassword && newPassword.length >= 6) {
+        await supabase.auth.updateUser({ password: newPassword });
+      }
+
+      await refreshSession(); // Atualiza contexto
+      setIsSaved(true);
+      setIsEditing(false);
+      setTimeout(() => setIsSaved(false), 3000);
+      setNewPassword('');
+      setCurrentPassword('');
+    } catch (error: any) {
+      alert("Erro ao salvar: " + error.message);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setIsUploading(true);
+      if (!event.target.files || event.target.files.length === 0 || !user) {
+        throw new Error('Você precisa selecionar uma imagem.');
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}-${Math.random()}.${fileExt}`;
+
+      // 1. Upload the file to "avatars" bucket
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get public URL
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const publicUrl = data.publicUrl;
+
+      // 3. Update the user_profiles table
+      const { error: updateError } = await supabase.from('users_profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // 4. Force auth context refresh to show new image
+      await refreshSession();
+      alert("Foto atualizada com sucesso!");
+    } catch (error: any) {
+      alert('Erro ao fazer upload da imagem: ' + error.message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -46,14 +104,34 @@ export const ProfilePage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-[#171717]/80 border border-white/5 rounded-[32px] p-8 backdrop-blur-2xl flex flex-col items-center text-center shadow-xl shadow-black/20"
           >
-            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#1A1A1A] shadow-[0_0_0_2px_rgba(193,154,66,0.3)] mb-6 relative">
-                <img src={user?.avatarUrl} alt={user?.name} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <Camera size={24} className="text-white" />
-                </div>
+            <div className={`relative group cursor-pointer ${isUploading ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => fileInputRef.current?.click()}>
+              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#1A1A1A] shadow-[0_0_0_2px_rgba(193,154,66,0.3)] mb-6 relative bg-black/50">
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[#C19A42] font-bold text-4xl">
+                    {user?.name?.charAt(0) || 'U'}
+                  </div>
+                )}
+
+                {isUploading ? (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center pointer-events-none">
+                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                    <Camera size={24} className="text-white" />
+                  </div>
+                )}
               </div>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" />
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/png, image/jpeg, image/jpg"
+                onChange={handleAvatarUpload}
+                disabled={isUploading}
+              />
             </div>
 
             <h2 className="text-xl font-bold text-[#F5F5F7] tracking-tight">{user?.name}</h2>

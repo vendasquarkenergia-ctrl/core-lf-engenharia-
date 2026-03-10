@@ -1,86 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, Clock, AlertCircle, CheckCircle2, Plus, X, Search, Filter } from 'lucide-react';
 import { cn } from '../../../core/components/layout/MainLayout';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../../core/auth/AuthContext';
-
-const INITIAL_TASKS = [
-  {
-    id: 1,
-    title: 'Solicitação de Cimento CP-II',
-    obra: 'Residencial Aurora',
-    responsavel: 'Carlos Engenheiro',
-    telefone: '5511999999999',
-    status: 'pendente',
-    prioridade: 'alta',
-    prazo: 'Hoje'
-  },
-  {
-    id: 2,
-    title: 'Correção de Planta Hidráulica',
-    obra: 'Edifício Horizonte',
-    responsavel: 'Ana Arquiteta',
-    telefone: '5511888888888',
-    status: 'em_andamento',
-    prioridade: 'media',
-    prazo: 'Amanhã'
-  },
-  {
-    id: 3,
-    title: 'Aprovação de Medição',
-    obra: 'Residencial Aurora',
-    responsavel: 'João Mestre',
-    telefone: '5511777777777',
-    status: 'concluido',
-    prioridade: 'baixa',
-    prazo: 'Ontem'
-  }
-];
+import { supabase } from '../../../lib/supabase';
 
 export const TasksPage = () => {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem('@lf-engenharia:tasks');
-    if (saved) return JSON.parse(saved);
-    return INITIAL_TASKS;
-  });
-
-  React.useEffect(() => {
-    localStorage.setItem('@lf-engenharia:tasks', JSON.stringify(tasks));
-  }, [tasks]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [obras, setObras] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleWhatsApp = (task: typeof INITIAL_TASKS[0]) => {
-    const message = `LF Engenharia: A tarefa *${task.title}* na obra *${task.obra}* está pendente com você. Qual o status?`;
-    const url = `https://wa.me/${task.telefone}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+  useEffect(() => {
+    fetchTasksAndObras();
+  }, []);
+
+  const fetchTasksAndObras = async () => {
+    setIsLoading(true);
+    try {
+      const { data: obrasData } = await supabase.from('obras').select('id, nome');
+      if (obrasData) setObras(obrasData);
+
+      const { data: tasksData, error } = await supabase
+        .from('tarefas')
+        .select('*, obras(nome), users_profiles(full_name)')
+        .order('data_vencimento', { ascending: true });
+
+      if (error) throw error;
+      setTasks(tasksData || []);
+    } catch (err) {
+      console.error("Erro ao puxar tarefas:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCompleteTask = (id: number) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, status: 'concluido' } : t));
+  const handleWhatsApp = (task: any) => {
+    alert("Função de WhatsApp será ativada quando o cadastro completo de usuários via painel de Controle estiver pronto. Por enquanto, a tarefa foi registrada com sucesso.");
   };
 
-  const handleAddTask = (newTask: any) => {
-    setTasks([{ ...newTask, id: Date.now(), status: 'pendente' }, ...tasks]);
-    setIsAddModalOpen(false);
+  const handleCompleteTask = async (id: string) => {
+    try {
+      const { error } = await supabase.from('tarefas').update({ status: 'CONCLUIDA' }).eq('id', id);
+      if (error) throw error;
+
+      // Optimistic update
+      setTasks(tasks.map(t => t.id === id ? { ...t, status: 'CONCLUIDA' } : t));
+    } catch (err) {
+      alert("Erro ao concluir tarefa");
+    }
+  };
+
+  const handleAddTask = async (newTask: any) => {
+    try {
+      const { data, error } = await supabase.from('tarefas').insert({
+        obra_id: newTask.obra_id,
+        titulo: newTask.titulo,
+        descricao: newTask.descricao,
+        prioridade: newTask.prioridade,
+        data_vencimento: newTask.prazo || null,
+        status: 'PENDENTE'
+      }).select();
+
+      if (error) throw error;
+      fetchTasksAndObras(); // reload
+      setIsAddModalOpen(false);
+    } catch (err) {
+      alert("Erro ao criar tarefa");
+    }
   };
 
   const filteredTasks = tasks.filter(task => {
-    const matchesFilter = filter === 'all' || task.status === filter;
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.obra.toLowerCase().includes(searchQuery.toLowerCase());
+    const taskStatus = task.status || 'PENDENTE';
+    const matchesFilter = filter === 'ALL' || taskStatus === filter;
+
+    const obraNome = task.obras?.nome || '';
+    const titulo = task.titulo || '';
+
+    const matchesSearch = titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      obraNome.toLowerCase().includes(searchQuery.toLowerCase());
+
     return matchesFilter && matchesSearch;
   });
 
   return (
     <div className="w-full max-w-5xl mx-auto p-4 md:p-8 space-y-6 pb-32 md:pb-6">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 mt-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[#F5F5F7]">Task Manager</h1>
-          <p className="text-slate-400 mt-1">Gestão de Gargalos e Pendências</p>
+          <p className="text-slate-400 mt-1">Gestão de Gargalos e Pendências (Integrado)</p>
         </div>
         <motion.button
           whileTap={{ scale: 0.95 }}
@@ -110,98 +122,106 @@ export const TasksPage = () => {
             onChange={(e) => setFilter(e.target.value)}
             className="bg-[#171717]/80 border border-white/10 rounded-xl px-4 py-2.5 text-[#F5F5F7] focus:outline-none focus:border-[#C19A42] transition-colors appearance-none"
           >
-            <option value="all">Todos os Status</option>
-            <option value="pendente">Pendentes</option>
-            <option value="em_andamento">Em Andamento</option>
-            <option value="concluido">Concluídos</option>
+            <option value="ALL">Todos os Status</option>
+            <option value="PENDENTE">Pendentes</option>
+            <option value="EM_ANDAMENTO">Em Andamento</option>
+            <option value="CONCLUIDA">Concluídos</option>
+            <option value="BLOQUEADA">Bloqueadas</option>
           </select>
         </div>
       </div>
 
       <div className="grid gap-4">
-        <AnimatePresence mode="popLayout">
-          {filteredTasks.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="text-center py-12 bg-[#171717]/50 rounded-3xl border border-white/5"
-            >
-              <CheckCircle2 size={48} className="mx-auto text-slate-600 mb-4" />
-              <p className="text-slate-400 font-medium">Nenhuma tarefa encontrada.</p>
-            </motion.div>
-          ) : (
-            filteredTasks.map((task, index) => (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="w-10 h-10 border-4 border-[#C19A42]/30 border-t-[#C19A42] rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {filteredTasks.length === 0 ? (
               <motion.div
-                layout
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                transition={{ duration: 0.2, delay: index * 0.05 }}
-                key={task.id}
-                className={cn(
-                  "bg-[#171717]/80 border rounded-[20px] p-5 backdrop-blur-2xl flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-lg shadow-black/20 transition-colors",
-                  task.status === 'concluido' ? "border-[#C19A42]/20 opacity-70" : "border-white/5"
-                )}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="text-center py-12 bg-[#171717]/50 rounded-3xl border border-white/5"
               >
-
-                <div className="flex items-start gap-4">
-                  <div className={cn(
-                    "mt-0.5 p-2.5 rounded-xl",
-                    task.status === 'concluido' ? "text-[#C19A42] bg-[#C19A42]/10 border border-[#C19A42]/20" :
-                      task.status === 'em_andamento' ? "text-blue-400 bg-blue-500/10 border border-blue-500/20" :
-                        "text-amber-400 bg-amber-500/10 border border-amber-500/20"
-                  )}>
-                    {task.status === 'concluido' ? <CheckCircle2 size={22} /> :
-                      task.status === 'em_andamento' ? <Clock size={22} /> :
-                        <AlertCircle size={22} />}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <h3 className={cn("font-semibold text-lg tracking-tight", task.status === 'concluido' ? "text-slate-400 line-through" : "text-[#F5F5F7]")}>
-                        {task.title}
-                      </h3>
-                      {task.prioridade === 'alta' && task.status !== 'concluido' && (
-                        <span className="bg-red-500/10 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-widest border border-red-500/20">
-                          Urgente
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-slate-400 text-sm mb-3 font-medium">{task.obra}</p>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                      <span className="bg-white/5 border border-white/5 px-2.5 py-1 rounded-lg">Resp: <span className="text-slate-200">{task.responsavel}</span></span>
-                      <span className="bg-white/5 border border-white/5 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-                        <Clock size={12} /> Prazo: <span className="text-slate-200">{task.prazo}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 mt-2 md:mt-0 w-full md:w-auto">
-                  {task.status !== 'concluido' && (
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => handleWhatsApp(task)}
-                      className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 px-5 py-2.5 rounded-xl h-12 font-medium transition-colors"
-                    >
-                      <MessageCircle size={18} />
-                      <span>Cobrar</span>
-                    </motion.button>
-                  )}
-                  {task.status !== 'concluido' && (
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => handleCompleteTask(task.id)}
-                      className="flex-1 md:flex-none bg-white/5 hover:bg-white/10 text-[#F5F5F7] border border-white/10 px-5 py-2.5 rounded-xl h-12 font-medium transition-colors"
-                    >
-                      Concluir
-                    </motion.button>
-                  )}
-                </div>
-
+                <CheckCircle2 size={48} className="mx-auto text-slate-600 mb-4" />
+                <p className="text-slate-400 font-medium">Nenhuma tarefa encontrada.</p>
               </motion.div>
-            ))
-          )}
-        </AnimatePresence>
+            ) : (
+              filteredTasks.map((task, index) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                  key={task.id}
+                  className={cn(
+                    "bg-[#171717]/80 border rounded-[20px] p-5 backdrop-blur-2xl flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-lg shadow-black/20 transition-colors",
+                    task.status === 'CONCLUIDA' ? "border-[#C19A42]/20 opacity-70" : "border-white/5"
+                  )}
+                >
+
+                  <div className="flex items-start gap-4">
+                    <div className={cn(
+                      "mt-0.5 p-2.5 rounded-xl",
+                      task.status === 'CONCLUIDA' ? "text-[#C19A42] bg-[#C19A42]/10 border border-[#C19A42]/20" :
+                        task.status === 'EM_ANDAMENTO' ? "text-blue-400 bg-blue-500/10 border border-blue-500/20" :
+                          task.status === 'BLOQUEADA' ? "text-rose-400 bg-rose-500/10 border border-rose-500/20" :
+                            "text-amber-400 bg-amber-500/10 border border-amber-500/20"
+                    )}>
+                      {task.status === 'CONCLUIDA' ? <CheckCircle2 size={22} /> :
+                        task.status === 'EM_ANDAMENTO' ? <Clock size={22} /> :
+                          <AlertCircle size={22} />}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <h3 className={cn("font-semibold text-lg tracking-tight", task.status === 'CONCLUIDA' ? "text-slate-400 line-through" : "text-[#F5F5F7]")}>
+                          {task.titulo}
+                        </h3>
+                        {task.prioridade === 'URGENTE' && task.status !== 'CONCLUIDA' && (
+                          <span className="bg-red-500/10 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-widest border border-red-500/20">
+                            Urgente
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-400 text-sm mb-3 font-medium">{task.obras?.nome || 'Obra não especificada'}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                        <span className="bg-white/5 border border-white/5 px-2.5 py-1 rounded-lg">Resp: <span className="text-slate-200">{task.users_profiles?.full_name || 'Desconhecido'}</span></span>
+                        <span className="bg-white/5 border border-white/5 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                          <Clock size={12} /> Prazo: <span className="text-slate-200">{task.data_vencimento ? new Date(task.data_vencimento).toLocaleDateString('pt-BR') : 'Sem Prazo'}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 mt-2 md:mt-0 w-full md:w-auto">
+                    {task.status !== 'CONCLUIDA' && (
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleWhatsApp(task)}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 px-5 py-2.5 rounded-xl h-12 font-medium transition-colors"
+                      >
+                        <MessageCircle size={18} />
+                        <span>Cobrar</span>
+                      </motion.button>
+                    )}
+                    {task.status !== 'CONCLUIDA' && (
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleCompleteTask(task.id)}
+                        className="flex-1 md:flex-none bg-white/5 hover:bg-white/10 text-[#F5F5F7] border border-white/10 px-5 py-2.5 rounded-xl h-12 font-medium transition-colors"
+                      >
+                        Concluir
+                      </motion.button>
+                    )}
+                  </div>
+
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        )}
       </div>
 
       {/* Add Task Modal */}
@@ -210,6 +230,7 @@ export const TasksPage = () => {
           <AddTaskModal
             onClose={() => setIsAddModalOpen(false)}
             onAdd={handleAddTask}
+            obras={obras}
           />
         )}
       </AnimatePresence>
@@ -217,25 +238,23 @@ export const TasksPage = () => {
   );
 };
 
-const AddTaskModal = ({ onClose, onAdd }: { onClose: () => void, onAdd: (task: any) => void }) => {
-  const [title, setTitle] = useState('');
-  const [obra, setObra] = useState('Residencial Aurora');
-  const [responsavel, setResponsavel] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [prioridade, setPrioridade] = useState('media');
+const AddTaskModal = ({ onClose, onAdd, obras }: { onClose: () => void, onAdd: (task: any) => void, obras: any[] }) => {
+  const [titulo, setTitulo] = useState('');
+  const [obraId, setObraId] = useState(obras[0]?.id || '');
+  const [descricao, setDescricao] = useState('');
+  const [prioridade, setPrioridade] = useState('NORMAL');
   const [prazo, setPrazo] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !responsavel) return;
+    if (!titulo || !obraId) return;
 
     onAdd({
-      title,
-      obra,
-      responsavel,
-      telefone: telefone || '5511000000000',
+      titulo,
+      obra_id: obraId,
+      descricao: descricao,
       prioridade,
-      prazo: prazo ? new Date(prazo).toLocaleDateString('pt-BR') : 'Sem prazo'
+      prazo: prazo
     });
   };
 
@@ -269,8 +288,8 @@ const AddTaskModal = ({ onClose, onAdd }: { onClose: () => void, onAdd: (task: a
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Título da Tarefa</label>
             <input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
               placeholder="Ex: Comprar material X"
               required
               className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-2.5 text-[#F5F5F7] placeholder:text-slate-500 focus:outline-none focus:border-[#C19A42] transition-colors"
@@ -280,38 +299,26 @@ const AddTaskModal = ({ onClose, onAdd }: { onClose: () => void, onAdd: (task: a
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Obra</label>
             <select
-              value={obra}
-              onChange={(e) => setObra(e.target.value)}
+              value={obraId}
+              required
+              onChange={(e) => setObraId(e.target.value)}
               className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-2.5 text-[#F5F5F7] focus:outline-none focus:border-[#C19A42] transition-colors appearance-none"
             >
-              <option>Residencial Aurora</option>
-              <option>Edifício Horizonte</option>
-              <option>Condomínio Vale Verde</option>
+              <option value="">Selecione a Obra</option>
+              {obras.map(o => (
+                <option key={o.id} value={o.id}>{o.nome}</option>
+              ))}
             </select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Responsável</label>
-              <input
-                type="text"
-                value={responsavel}
-                onChange={(e) => setResponsavel(e.target.value)}
-                placeholder="Nome do responsável"
-                required
-                className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-2.5 text-[#F5F5F7] placeholder:text-slate-500 focus:outline-none focus:border-[#C19A42] transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">WhatsApp (Opcional)</label>
-              <input
-                type="text"
-                value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
-                placeholder="5511999999999"
-                className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-2.5 text-[#F5F5F7] placeholder:text-slate-500 focus:outline-none focus:border-[#C19A42] transition-colors"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Descrição/Observações</label>
+            <textarea
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Detalhes adicionais..."
+              className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-2.5 text-[#F5F5F7] placeholder:text-slate-500 focus:outline-none focus:border-[#C19A42] transition-colors resize-none h-20"
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -322,18 +329,19 @@ const AddTaskModal = ({ onClose, onAdd }: { onClose: () => void, onAdd: (task: a
                 onChange={(e) => setPrioridade(e.target.value)}
                 className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-2.5 text-[#F5F5F7] focus:outline-none focus:border-[#C19A42] transition-colors appearance-none"
               >
-                <option value="baixa">Baixa</option>
-                <option value="media">Média</option>
-                <option value="alta">Alta (Urgente)</option>
+                <option value="BAIXA">Baixa</option>
+                <option value="NORMAL">Normal</option>
+                <option value="ALTA">Alta</option>
+                <option value="URGENTE">Urgente</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Prazo</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Prazo Estimado</label>
               <input
                 type="date"
                 value={prazo}
                 onChange={(e) => setPrazo(e.target.value)}
-                className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-2.5 text-[#F5F5F7] focus:outline-none focus:border-[#C19A42] transition-colors"
+                className="w-full bg-[#2A2A2A] border border-white/10 rounded-xl px-4 py-2.5 text-[#F5F5F7] focus:outline-none focus:border-[#C19A42] transition-colors cursor-text"
               />
             </div>
           </div>
