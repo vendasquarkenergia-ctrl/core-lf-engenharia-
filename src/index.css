@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Pro Max Color Tokens: Dark Mode OLED / Glassmorphism */
+  --color-root-bg: #020617; /* Slate OLED */
+  --color-card-bg: rgba(15, 23, 42, 0.6); /* Translucent Glass */
+  --color-card-border: rgba(255, 255, 255, 0.08);
+
+  /* LF Accent: Construction/Engineering Premium Orange/Gold */
+  --color-accent: #EA580C; 
+  --color-accent-hover: #C2410C;
+
+  /* Success & Error */
+  --color-success: #22C55E;
+  --color-error: #EF4444;
+
+  /* Neutral Text */
+  --color-text-main: #F8FAFC;
+  --color-text-muted: #94A3B8;
+}
+
+body {
+  background-color: var(--color-root-bg);
+  color: var(--color-text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* -- Pro Max Utils -- */
+@utility glass {
+  background-color: var(--color-card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-card-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+@utility glass-panel {
+  background-color: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@utility transition-promax {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@utility hover-scale {
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Safe area padding for mobile bottom nav */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
