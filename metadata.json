@@ -1,0 +1,5 @@
+{
+  "name": "CORE - LF Engenharia",
+  "description": "Sistema de gestão de obras e financeiro para a LF Engenharia, com timeline, RDO inteligente e controle de tarefas.",
+  "requestFramePermissions": ["camera", "geolocation"]
+}

@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Marca LF Engenharia (Modernizada SV) */
+  --color-lf-gold: #D4AF37; /* SV modern gold */
+  --color-lf-gold-dim: rgba(212, 175, 55, 0.15);
+  --color-lf-blue: #0E3A7E;
+  --color-lf-green: #10B981;
+  --color-lf-dark: #000000;
+  
+  /* Dynamic B2B Theme Colors */
+  --color-lf-bg: var(--lf-bg);
+  --color-lf-surface: var(--lf-surface);
+  --color-lf-text: var(--lf-text);
+  --color-lf-muted: var(--lf-muted);
+  --color-lf-border: var(--lf-border);
+  --color-lf-icon: var(--lf-icon);
+
+  /* Tipografia */
+  --font-geist: "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-inter: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "Geist Mono", "Roboto Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Formas SV */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+}
+
+@layer base {
+  :root {
+    --lf-bg: #FFFFFF;
+    --lf-surface: #FAFAFA;
+    --lf-text: #111111;
+    --lf-muted: #888888;
+    --lf-border: rgba(0, 0, 0, 0.08);
+    --lf-icon: #666666;
+  }
+
+  :root.dark {
+    --lf-bg: #000000;
+    --lf-surface: #0A0A0A;
+    --lf-text: #EDEDED;
+    --lf-muted: #8A8F98;
+    --lf-border: rgba(255, 255, 255, 0.1);
+    --lf-icon: #8A8F98;
+  }
+
+  body {
+    background-color: var(--lf-bg);
+    color: var(--lf-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: var(--font-geist);
+  }
+
+  html {
+    font-family: var(--font-geist);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-geist);
+    letter-spacing: -0.03em;
+  }
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--lf-border);
+  border-radius: 6px;
+}
+
+/* Glassmorphism utility for SV aesthetic */
+.glass-panel {
+  background: rgba(10, 10, 10, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--lf-border);
+}
+
+/* Marker Pulse Animation applied to animate-ping */
+@keyframes marker-ping {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.animate-ping {
+  animation: marker-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
