@@ -31,9 +31,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Habilitar a Parede de RLS em Profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Usuarios autenticados podem ver todos os perfis" ON public.profiles;
 CREATE POLICY "Usuarios autenticados podem ver todos os perfis" 
     ON public.profiles FOR SELECT USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Usuarios podem atualizar o proprio perfil" ON public.profiles;
 CREATE POLICY "Usuarios podem atualizar o proprio perfil" 
     ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
