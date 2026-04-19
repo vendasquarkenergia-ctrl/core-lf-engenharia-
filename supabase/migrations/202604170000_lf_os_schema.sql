@@ -101,3 +101,82 @@ CREATE TRIGGER rdo_diario_audit
 CREATE TRIGGER suprimentos_audit
     AFTER INSERT OR UPDATE OR DELETE ON suprimentos_pedidos
     FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+
+-- ==============================================================================
+-- FASE 2: POLÍTICAS DE SEGURANÇA E RLS (ROW LEVEL SECURITY)
+-- ==============================================================================
+
+-- 1. Habilitando RLS em todas as tabelas estruturais
+ALTER TABLE obras ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rdo_diario ENABLE ROW LEVEL SECURITY;
+ALTER TABLE suprimentos_pedidos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE timeline_fotos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- 2. Função auxiliar para verificar role do usuário atual
+CREATE OR REPLACE FUNCTION auth.user_role()
+RETURNS public.app_role AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid();
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- 3. Políticas para OBRAS
+CREATE POLICY "Leitura de obras pública para autenticados" 
+    ON obras FOR SELECT 
+    USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Apenas ADMIN pode inserir/atualizar/deletar obras" 
+    ON obras FOR ALL 
+    USING (auth.user_role() = 'ADMIN'::public.app_role);
+
+-- 4. Políticas para RDO DIÁRIO
+CREATE POLICY "Leitura de RDO pública para autenticados" 
+    ON rdo_diario FOR SELECT 
+    USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Eng/Mestres podem criar RDO; check de autoria" 
+    ON rdo_diario FOR INSERT 
+    WITH CHECK (auth.uid() = autor_id AND auth.user_role() IN ('ADMIN'::public.app_role, 'ENGENHEIRO'::public.app_role, 'MESTRE'::public.app_role));
+
+CREATE POLICY "Autor Original ou ADMIN podem atualizar RDO" 
+    ON rdo_diario FOR UPDATE 
+    USING (auth.uid() = autor_id OR auth.user_role() = 'ADMIN'::public.app_role);
+
+CREATE POLICY "Apenas ADMIN pode deletar RDO" 
+    ON rdo_diario FOR DELETE 
+    USING (auth.user_role() = 'ADMIN'::public.app_role);
+
+-- 5. Políticas para SUPRIMENTOS
+CREATE POLICY "Leitura de Suprimentos pública para autenticados" 
+    ON suprimentos_pedidos FOR SELECT 
+    USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Criar pedido protegido por autoria" 
+    ON suprimentos_pedidos FOR INSERT 
+    WITH CHECK (auth.uid() = solicitante_id AND auth.user_role() IN ('ADMIN'::public.app_role, 'ENGENHEIRO'::public.app_role, 'MESTRE'::public.app_role));
+
+CREATE POLICY "Autor Original ou ADMIN podem atualizar pedido" 
+    ON suprimentos_pedidos FOR UPDATE 
+    USING (auth.uid() = solicitante_id OR auth.user_role() = 'ADMIN'::public.app_role);
+
+CREATE POLICY "Apenas ADMIN pode deletar Suprimento" 
+    ON suprimentos_pedidos FOR DELETE 
+    USING (auth.user_role() = 'ADMIN'::public.app_role);
+
+-- 6. Políticas para TIMELINE FOTOS
+CREATE POLICY "Leitura de Fotos pública para autenticados" 
+    ON timeline_fotos FOR SELECT 
+    USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Usuários podem adicionar Fotos" 
+    ON timeline_fotos FOR INSERT 
+    WITH CHECK (auth.uid() = autor_id);
+
+CREATE POLICY "Apenas ADMIN pode deletar Fotos" 
+    ON timeline_fotos FOR DELETE 
+    USING (auth.user_role() = 'ADMIN'::public.app_role);
+
+-- 7. Políticas de Audit Logs
+CREATE POLICY "Apenas ADMIN pode ler Auditoria" 
+    ON audit_logs FOR SELECT 
+    USING (auth.user_role() = 'ADMIN'::public.app_role);
+

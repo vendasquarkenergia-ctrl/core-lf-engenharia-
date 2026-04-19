@@ -39,20 +39,37 @@ CREATE POLICY "Usuários podem atualizar o próprio perfil"
 -- podem excluir perfis ou alterar o 'role' via client-side.
 -- O 'role' não é modificável por um UPDATE do próprio usuário sem privilégios extras (necessitaria de verificação adicional em triggers de update).
 
--- 4. Função Automática de Sincronização (Trigger Function)
--- Roda em modo SECURITY DEFINER para ultrapassar o RLS e garantir o INSERT a partir do evento do schema "auth".
+-- 4. Função Automática de Sincronização (Trigger Function) Robusta
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  role_val public.app_role;
+  nome_val text;
 BEGIN
+  -- 1. Tratamento e cast seguro do role
+  BEGIN
+    IF new.raw_user_meta_data->>'role' IS NOT NULL AND new.raw_user_meta_data->>'role' != '' THEN
+      role_val := UPPER(new.raw_user_meta_data->>'role')::public.app_role;
+    ELSE
+      role_val := 'MESTRE'::public.app_role;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    role_val := 'MESTRE'::public.app_role;
+  END;
+
+  -- 2. Fallback Seguro para Nome
+  nome_val := COALESCE(new.raw_user_meta_data->>'full_name', 'Usuário ' || split_part(COALESCE(new.email, 'novo@user.com'), '@', 1));
+
+  -- 3. Inserção final no profiles
   INSERT INTO public.profiles (id, email, full_name, role, avatar_url)
   VALUES (
     new.id,
-    new.email,
-    -- Tentará buscar dados do metadata no sign up, como 'full_name' e 'role', se passados no registro.
-    COALESCE(new.raw_user_meta_data->>'full_name', 'Usuário ' || split_part(new.email, '@', 1)),
-    COALESCE((new.raw_user_meta_data->>'role')::public.app_role, 'MESTRE'::public.app_role),
+    COALESCE(new.email, 'sem_email_' || new.id || '@app.com'),
+    nome_val,
+    role_val,
     COALESCE(new.raw_user_meta_data->>'avatar_url', '')
   );
+  
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

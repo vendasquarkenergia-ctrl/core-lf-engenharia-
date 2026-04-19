@@ -14,6 +14,9 @@ import { ObrasPipeline } from './modules/lf-engenharia/portfolio/ObrasPipeline';
 import { ProfilePage } from './modules/lf-engenharia/profile/ProfilePage';
 import { LoginPage } from './modules/lf-engenharia/auth/LoginPage';
 import { DynamicTacticalMap } from './modules/lf-engenharia/map/DynamicTacticalMap';
+import { TasksPage } from './modules/lf-engenharia/tasks/TasksPage';
+import { SuprimentosBoard } from './modules/lf-engenharia/suprimentos/SuprimentosBoard';
+import { VaultProjetos } from './modules/lf-engenharia/projetos/VaultProjetos';
 import { AnimatePresence } from 'motion/react';
 
 const AppRoutes = ({ location }: { location: any }) => {
@@ -46,6 +49,9 @@ const AppRoutes = ({ location }: { location: any }) => {
           <Route path="timeline" element={<RdoMobileEngine />} />
           <Route path="dashboard" element={<CaixaMaster />} />
           <Route path="implantacao" element={<DynamicTacticalMap />} />
+          <Route path="tasks" element={<TasksPage />} />
+          <Route path="suprimentos" element={<SuprimentosBoard />} />
+          <Route path="projetos" element={<VaultProjetos />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Compass, LayoutDashboard, KanbanSquare, ClipboardCheck, Wallet, UserCircle, Map } from 'lucide-react';
+import { LayoutDashboard, Monitor, CheckSquare, Package, FileText, Briefcase, Wallet, UserCircle } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -14,12 +14,14 @@ export function cn(...inputs: ClassValue[]) {
 
 // LF OS MASTER NAV ITEMS
 const NAV_ITEMS = [
-  { path: '/master', label: 'Command Center', icon: LayoutDashboard, roles: ['ADMIN'] },
-  { path: '/portfolio', label: 'Obras Pipeline', icon: KanbanSquare, roles: ['ADMIN'] },
-  { path: '/timeline', label: 'RDO Master', icon: ClipboardCheck, roles: ['ADMIN', 'COLABORADOR'] },
-  { path: '/dashboard', label: 'Caixa & Compras', icon: Wallet, roles: ['ADMIN'] },
-  { path: '/implantacao', label: 'Implantação', icon: Map, roles: ['ADMIN', 'COLABORADOR'] },
-  { path: '/profile', label: 'Perfil', icon: UserCircle, roles: ['ADMIN', 'COLABORADOR', 'CLIENTE'] },
+  { path: '/master', label: 'Visão Geral', icon: LayoutDashboard, roles: ['ADMIN', 'ENGENHEIRO'] },
+  { path: '/timeline', label: 'Timeline / RDO', icon: Monitor, roles: ['ADMIN', 'ENGENHEIRO', 'MESTRE', 'CLIENTE'] },
+  { path: '/tasks', label: 'Tarefas e Pendências', icon: CheckSquare, roles: ['ADMIN', 'ENGENHEIRO', 'MESTRE'] },
+  { path: '/suprimentos', label: 'Suprimentos', icon: Package, roles: ['ADMIN', 'ENGENHEIRO'] },
+  { path: '/projetos', label: 'Projetos e Specs', icon: FileText, roles: ['ADMIN', 'ENGENHEIRO', 'MESTRE'] },
+  { path: '/portfolio', label: 'Portfólio', icon: Briefcase, roles: ['ADMIN', 'ENGENHEIRO'] },
+  { path: '/dashboard', label: 'Caixa Master', icon: Wallet, roles: ['ADMIN'] },
+  { path: '/profile', label: 'Meu Perfil', icon: UserCircle, roles: ['ADMIN', 'ENGENHEIRO', 'MESTRE', 'CLIENTE'] },
 ];
 
 export const MainLayout = () => {

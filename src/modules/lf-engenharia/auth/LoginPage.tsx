@@ -1,29 +1,46 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../core/auth/AuthContext';
-import { motion } from 'motion/react';
-import { Lock, Mail, ArrowRight } from 'lucide-react';
+import { supabase } from '../../../core/services/supabase';
+import { motion, AnimatePresence } from 'motion/react';
+import { Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMsg('');
     
-    // Mock Supabase Auth delay
-    setTimeout(() => {
-      let role: 'ADMIN' | 'COLABORADOR' | 'CLIENTE' = 'COLABORADOR';
-      if (email.includes('admin')) role = 'ADMIN';
-      if (email.includes('cliente')) role = 'CLIENTE';
-      
-      login(role, email);
+    try {
+      const loginPromise = supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      // Timeout de segurança de 10s para casos em que a internet cai ou API trava
+      const timeoutPromise = new Promise<{ error: Error }>((resolve) => {
+        setTimeout(() => resolve({ error: new Error('O servidor demorou muito para responder. Verifique sua conexão ou tente novamente.') }), 10000);
+      });
+
+      const { data, error } = await Promise.race([loginPromise, timeoutPromise]) as any;
+
+      if (error) {
+        throw error;
+      }
+
+      // O roteador (App.tsx) reagirá à mudança no AuthContext e navegará automaticamente,
+      // mas podemos forçar também
       navigate('/');
-    }, 1200);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Credenciais inválidas. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -44,10 +61,24 @@ export const LoginPage = () => {
               LF
             </div>
             <h1 className="text-2xl font-semibold text-[#F5F5F7] tracking-tight">CORE Access</h1>
-            <p className="text-sm text-slate-400 mt-2">Sign in to your workspace</p>
+            <p className="text-sm text-slate-400 mt-2">Sign in to your enterprise workspace</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            <AnimatePresence>
+              {errorMsg && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl flex items-center gap-2 text-sm overflow-hidden"
+                >
+                  <AlertCircle size={18} className="shrink-0" />
+                  <p>{errorMsg}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-400 ml-1">Email</label>
               <div className="relative">
@@ -86,21 +117,21 @@ export const LoginPage = () => {
               whileTap={{ scale: 0.97 }}
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#C19A42] hover:bg-[#D6AF53] text-black font-semibold rounded-xl h-14 flex items-center justify-center gap-2 transition-colors mt-8 shadow-[0_0_20px_rgba(193,154,66,0.15)] disabled:opacity-70"
+              className="w-full bg-[#C19A42] hover:bg-[#D6AF53] text-black font-semibold rounded-xl h-14 flex items-center justify-center gap-2 transition-colors mt-8 shadow-[0_0_20px_rgba(193,154,66,0.15)] disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
               ) : (
                 <>
-                  Continue <ArrowRight size={18} />
+                  Secure Login <ArrowRight size={18} />
                 </>
               )}
             </motion.button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-xs text-slate-500">
-              Dica: Use <span className="text-slate-300">admin@</span>, <span className="text-slate-300">colab@</span> ou <span className="text-slate-300">cliente@</span> para testar os perfis.
+          <div className="mt-8 text-center border-t border-white/5 pt-6">
+            <p className="text-xs text-slate-600">
+             Proteção RLS Ativa. Autenticação via Nuvem.
             </p>
           </div>
         </div>

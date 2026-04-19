@@ -3,11 +3,7 @@ import { useAuth, Role } from '../../../core/auth/AuthContext';
 import { Camera, Save, Shield } from 'lucide-react';
 
 export const ProfilePage = () => {
-  const { user, login } = useAuth();
-
-  const handleRoleSwitch = (role: Role) => {
-    login(role);
-  };
+  const { user } = useAuth();
 
   if (!user) return null;
 
@@ -81,15 +77,6 @@ export const ProfilePage = () => {
         </form>
       </div>
 
-      {/* DEV ONLY: Role Switcher */}
-      <div className="mt-8 p-5 border border-dashed border-white/10 rounded-[24px] bg-white/5">
-        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Dev Tools: Simular Acesso</h3>
-        <div className="flex flex-wrap gap-3">
-          <button onClick={() => handleRoleSwitch('ADMIN')} className="text-xs font-medium bg-[#171717] hover:bg-[#2A2A2A] text-white px-4 py-2 rounded-xl border border-white/10 transition-colors">Login como ADMIN</button>
-          <button onClick={() => handleRoleSwitch('COLABORADOR')} className="text-xs font-medium bg-[#171717] hover:bg-[#2A2A2A] text-white px-4 py-2 rounded-xl border border-white/10 transition-colors">Login como COLABORADOR</button>
-          <button onClick={() => handleRoleSwitch('CLIENTE')} className="text-xs font-medium bg-[#171717] hover:bg-[#2A2A2A] text-white px-4 py-2 rounded-xl border border-white/10 transition-colors">Login como CLIENTE</button>
-        </div>
-      </div>
     </div>
   );
 };
