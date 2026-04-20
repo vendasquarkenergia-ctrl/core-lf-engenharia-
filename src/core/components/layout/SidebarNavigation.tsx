@@ -30,21 +30,8 @@ export function SidebarNavigation({ navItems }: { navItems: any[] }) {
     <aside className="hidden md:flex flex-col w-64 bg-lf-surface border-r border-lf-border p-4 sticky top-0 h-screen z-40 transition-colors duration-300">
       
       {/* LF Brand Logo Original */}
-      <div className="flex items-center gap-3 mb-8 px-2 mt-2">
-        <div className="w-12 h-12 bg-lf-bg border border-white/5  flex items-center justify-center shrink-0 relative overflow-hidden group rounded-xl">
-          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-lf-gold p-1 transform group-hover:scale-105 transition-transform duration-300">
-            {/* Outer Square */}
-            <rect x="15" y="15" width="70" height="70" stroke="currentColor" strokeWidth="8"/>
-            {/* L */}
-            <path d="M32 30 V 68 H 48" stroke="currentColor" strokeWidth="8"/>
-            {/* F */}
-            <path d="M58 68 V 30 H 74 M 58 48 H 70" stroke="currentColor" strokeWidth="8"/>
-          </svg>
-        </div>
-        <div className="flex flex-col justify-center">
-          <h1 className="font-geist font-black text-2xl leading-none tracking-tight text-lf-text mb-0.5 uppercase transition-colors">LF</h1>
-          <h2 className="font-inter font-bold text-[9px] leading-tight tracking-[0.15em] text-lf-text uppercase transition-colors">SOLUÇÕES EM<br/>ENGENHARIA</h2>
-        </div>
+      <div className="flex items-center gap-3 mb-8 px-2 mt-2 w-full">
+        <img src="/logo.jpeg" alt="LF Soluções em Engenharia" className="w-full max-w-[180px] h-auto object-contain rounded-md" />
       </div>
 
       {/* Global Search Cmd+K Trigger */}
