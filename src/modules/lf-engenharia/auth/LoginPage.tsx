@@ -57,8 +57,9 @@ export const LoginPage = () => {
       >
         <div className="bg-[#171717]/80 backdrop-blur-2xl border border-white/10 rounded-[24px] p-8 shadow-2xl shadow-black/50">
           <div className="flex flex-col items-center mb-10">
-            <div className="w-16 h-16 border-[3px] border-[#C19A42] flex items-center justify-center font-bold text-3xl text-[#C19A42] rounded-2xl mb-4 shadow-[0_0_20px_rgba(193,154,66,0.2)]">
-              LF
+            <div className="w-48 mb-6 relative group">
+              <div className="absolute inset-0 bg-[#C19A42]/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <img src="/logo.png" alt="LF Soluções em Engenharia" className="w-full h-auto object-contain relative z-10 drop-shadow-lg rounded-xl" />
             </div>
             <h1 className="text-2xl font-semibold text-[#F5F5F7] tracking-tight">CORE Access</h1>
             <p className="text-sm text-slate-400 mt-2">Sign in to your enterprise workspace</p>
